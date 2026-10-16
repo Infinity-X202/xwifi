@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xwifi"
+version = "1.0.2"
+description = "Infinity X — interactive WiFi / LAN toolkit for Kali Linux"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Infinity X" }]
+keywords = ["wifi", "kali", "pentest", "arp", "lan"]
+dependencies = ["rich>=10.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/Infinity-X202/xwifi"
+
+[project.scripts]
+xwifi = "xwifi.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
