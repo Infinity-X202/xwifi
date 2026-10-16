@@ -2,7 +2,7 @@
 # Infinity X — install xwifi su Kali (no upgrade pip/wheel Debian)
 set -euo pipefail
 
-echo "[*] xwifi v1.0.4 — Created by Infinity X"
+echo "[*] xwifi v1.0.5 — Created by Infinity X"
 echo "[*] Cartella: $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ "$(id -u)" -ne 0 ]]; then
