@@ -2,7 +2,7 @@
 # Infinity X — install xwifi su Kali (no upgrade pip/wheel Debian)
 set -euo pipefail
 
-echo "[*] xwifi v1.0.3 — Created by Infinity X"
+echo "[*] xwifi v1.0.4 — Created by Infinity X"
 echo "[*] Cartella: $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -38,10 +38,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[*] Install pacchetto xwifi…"
 python3 -m pip install "${PIP_FLAGS[@]}" --force-reinstall "$SCRIPT_DIR"
 
+# Su Kali sudo spesso non ha /usr/local/bin nel PATH → "xwifi: command not found"
+install -d /usr/bin
+cat > /usr/bin/xwifi << 'EOF'
+#!/usr/bin/env python3
+from xwifi.cli import main
+
+if __name__ == "__main__":
+    main()
+EOF
+chmod 755 /usr/bin/xwifi
+
 echo ""
 echo "[+] Installazione OK."
-if command -v xwifi >/dev/null 2>&1; then
-  echo "[+] Avvia: sudo xwifi"
-else
-  echo "[+] Avvia: sudo python3 -m xwifi"
-fi
+echo "[+] Avvia: sudo xwifi"
