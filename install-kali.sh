@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Infinity X — install xwifi (senza PyPI, senza errori scapy)
+# Infinity X — install xwifi su Kali (no upgrade pip/wheel Debian)
 set -euo pipefail
 
-echo "[*] xwifi v1.0.2 — Created by Infinity X"
+echo "[*] xwifi v1.0.3 — Created by Infinity X"
 echo "[*] Cartella: $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -19,24 +19,24 @@ if ! python3 -m pip install --help 2>/dev/null | grep -q break-system-packages; 
   PIP_FLAGS=()
 fi
 
-python3 -m pip install "${PIP_FLAGS[@]}" --upgrade pip wheel
-python3 -m pip install "${PIP_FLAGS[@]}" "rich>=10.0.0"
+# Non fare upgrade di pip/wheel: su Kali sono pacchetti .deb e pip fallisce con uninstall-no-record-file
+ensure_rich() {
+  if python3 -c "import rich" 2>/dev/null; then
+    return 0
+  fi
+  if apt-get install -y python3-rich 2>/dev/null; then
+    python3 -c "import rich" 2>/dev/null && return 0
+  fi
+  echo "[*] Install rich via pip (ignore-installed)…"
+  python3 -m pip install "${PIP_FLAGS[@]}" --ignore-installed "rich>=10.0.0"
+}
+
+ensure_rich
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WHEEL="${SCRIPT_DIR}/dist/xwifi-1.0.2-py3-none-any.whl"
 
-if [[ ! -f "$WHEEL" ]]; then
-  echo "[*] Wheel non trovato — build locale…"
-  python3 -m pip install "${PIP_FLAGS[@]}" build
-  (cd "$SCRIPT_DIR" && python3 -m build -w)
-fi
-
-if [[ -f "$WHEEL" ]]; then
-  python3 -m pip install "${PIP_FLAGS[@]}" --force-reinstall --no-deps "$WHEEL"
-else
-  echo "[*] Install da sorgente…"
-  python3 -m pip install "${PIP_FLAGS[@]}" --force-reinstall "$SCRIPT_DIR"
-fi
+echo "[*] Install pacchetto xwifi…"
+python3 -m pip install "${PIP_FLAGS[@]}" --force-reinstall "$SCRIPT_DIR"
 
 echo ""
 echo "[+] Installazione OK."

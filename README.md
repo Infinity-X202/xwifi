@@ -23,8 +23,26 @@ sudo xwifi
 Lo script:
 
 1. Installa dipendenze di sistema (`python3-scapy`, `nmap`, …)
-2. Installa `rich` via pip
-3. Installa il pacchetto `xwifi` (build locale se manca il wheel)
+2. Installa `rich` (apt o pip, **senza** aggiornare pip/wheel Debian)
+3. Installa `xwifi` da sorgente con `pip install .`
+
+### Se l’install si ferma su `Cannot uninstall wheel`
+
+Su Kali è un bug noto: non aggiornare pip/wheel a mano. Aggiorna lo script e reinstalla:
+
+```bash
+cd ~/xwifi && git pull
+sudo ./install-kali.sh
+```
+
+Oppure fix manuale:
+
+```bash
+cd ~/xwifi
+sudo pip3 install rich --break-system-packages --ignore-installed
+sudo pip3 install . --break-system-packages --force-reinstall
+sudo xwifi
+```
 
 ## Installazione manuale
 

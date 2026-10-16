@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xwifi"
-version = "1.0.2"
+version = "1.0.3"
 description = "Infinity X — interactive WiFi / LAN toolkit for Kali Linux"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Infinity X" }]
 keywords = ["wifi", "kali", "pentest", "arp", "lan"]
 dependencies = ["rich>=10.0.0"]
